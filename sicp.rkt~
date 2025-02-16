@@ -1,0 +1,226 @@
+#lang sicp
+(define (sqrt-iter prev guess x)
+  (if (new-good-enough? prev guess)
+      guess
+      (sqrt-iter guess
+                 (improve guess x)
+                 x)))
+(define (cbrt-iter guess x)
+  (if (good-enough-cb? guess x)
+      guess
+      (cbrt-iter (improve-cbrt guess x)
+                 x)))
+(define (improve-cbrt guess x)
+  (/ (+ (/ x (square guess))
+        (* 2 guess))
+     3))
+(define (good-enough-cb? guess x)
+  (< (abs (- (cube guess) x)) 0.001))
+(define (improve guess x)
+  (average guess (/ x guess)))
+(define (square x) (* x x))
+(define (average x y)
+  (/ (+ x y) 2))
+
+(define (good-enough? guess x)
+  (< (abs (- (square guess) x)) 0.001))
+(define (new-good-enough? prev guess)
+  (< (abs (- (/ prev guess) 1)) 0.001))
+(define (sqrt x)
+  (sqrt-iter 0 1.0 x))
+(define (cube x) (* x x x))
+(define (cbrt x)
+  (cbrt-iter 1.0 x))
+
+(define (factorial n)
+  (if (= n 1)
+      n
+      (* n (factorial (- n 1)))))
+(define (fact-iter counter cur n)
+  (if (= counter n)
+      (* counter cur)
+      (fact-iter (+ counter 1)
+                 (* counter cur)
+                 n)))
+(define (factorial-iter n)
+  (fact-iter 1 1 n))
+(define (A x y)
+  (cond ((= y 0) 0)
+        ((= x 0) (* 2 y))
+        ((= y 1) 2)
+        (else (A (- x 1)
+                 (A x (- y 1))))))
+
+(define (f n)
+  (if (< n 3)
+      n
+      (+ (f (- n 1)) (* 2 (f (- n 2))) (* 3 (f (- n 3))))))
+
+(define (f-iter n)
+  (if (< n 3)
+      n
+      (f-iter-helper 2 1 0 3 n)))
+(define (f-iter-helper fn-1 fn-2 fn-3 counter n)
+  (if (> counter n)
+      fn-1
+      (f-iter-helper (+ fn-1
+                        (* 2 fn-2)
+                        (* 3 fn-3))
+                     fn-1
+                     fn-2
+                     (+ counter 1)
+                     n)))
+
+(define (pascals row col)
+  (cond ((or (< col 0) (> col row)) 0)
+        ((= row 0) 1)
+        (else (+ (pascals (- row 1) (- col 1))
+                 (pascals (- row 1) col)))))
+(define (pow-iter x n) (pow-iter-helper 1 x n))
+(define (pow-iter-helper a x n)
+  (if (= n 0)
+      a
+      (if (= (remainder n 2) 1)
+          (pow-iter-helper (* a x) x (- n 1))
+          (pow-iter-helper a (square x) (/ n 2)))))
+
+(define (fast-expt b n)
+  (cond ((= n 0) 1)
+        ((even? n) (square (fast-expt b (/ n 2))))
+        (else (* b (fast-expt b (- n 1))))))
+(define (even? n)
+  (= (remainder n 2) 0))
+(define (double x)
+  (* 2 x))
+(define (halve x)
+  (/ x 2))
+
+(define (fast-mult a b)
+  (cond ((= b 0) 0)
+        ((even? b) (fast-mult (double a) (halve b)))
+        (else (+ a (fast-mult a (- b 1))))))
+
+(define (fast-mult-iter a b)
+  (define (helper x a b)
+    (cond ((= b 0) x)
+          ((even? b) (helper x (double a) (halve b)))
+          (else (helper (+ x a) a (- b 1)))))
+  (helper 0 a b))
+
+(define (fib n)
+  (fib-iter 1 0 0 1 n))
+(define (fib-iter a b p q count)
+  (cond ((= count 0) b)
+        ((even? count)
+         (fib-iter a
+                   b
+                   (+ (square q) (square p))      ; compute p'
+                   (+ (* 2 p q) (square q))      ; compute q'
+                   (/ count 2)))
+        (else (fib-iter (+ (* b q) (* a q) (* a p))
+                        (+ (* b p) (* a q))
+                        p
+                        q
+                        (- count 1)))))
+
+(define (fibonacci n)
+  (cond ((= n 0) 0)
+        ((= n 1) 1)
+        (else (+ (fibonacci (- n 1)) (fibonacci (- n 2))))))
+
+(define (smallest-divisor n)
+  (find-divisor n 2))
+(define (find-divisor n test-divisor)
+  (cond ((> (square test-divisor) n) n)
+        ((divides? test-divisor n) test-divisor)
+        (else (find-divisor n (next test-divisor)))))
+(define (divides? a b)
+  (= (remainder b a) 0))
+
+(define (next test-divisor)
+  (if (= test-divisor 2)
+      3
+      (+ test-divisor 2)))
+
+(define (timed-prime-test n)
+  (newline)
+  (display n)
+  (start-prime-test n (runtime)))
+(define (start-prime-test n start-time)
+  (if (fast-prime? n 1)
+      (report-prime (- (runtime) start-time))))
+(define (report-prime elapsed-time)
+  (display " *** ")
+  (display elapsed-time))
+
+(define (prime? n)
+  (= n (smallest-divisor n)))
+
+(define (expmod base exp m)
+  (cond ((= exp 0) 1)
+        ((even? exp)
+         (remainder (square (expmod base (/ exp 2) m))
+                    m))
+        (else
+         (remainder (* base (expmod base (- exp 1) m))
+                    m))))    
+(define (expmod-miller base exp m)
+  (cond ((= exp 0) 1)
+        ((even? exp)
+         (check1 (remainder (square (expmod-miller base (/ exp 2) m))
+                    m)))
+        (else
+         (remainder (* base (expmod-miller base (- exp 1) m))
+                    m))))    
+
+(define (check1 n)
+  (if (= n 1)
+      0
+      n))
+
+(define (miller-rabin n)
+  (define (try-it a)
+    (= (expmod-miller a n n) a))
+  (try-it (+ 1 (random (- n 1)))))
+
+(define (fermat-test n)
+  (define (try-it a)
+    (= (expmod a n n) a))
+  (try-it (+ 1 (random (- n 1)))))
+
+(define (fast-prime? n times)
+  (cond ((= times 0) true)
+        ((miller-rabin n) (fast-prime? n (- times 1)))
+        (else false)))
+
+(define (search-for-primes start end)
+  (cond ((even? start) (search-for-primes (+ start 1) end))
+        ((> start end) (display "done"))
+        (else (timed-prime-test start) (search-for-primes (+ start 2) end))))
+
+(define (carmichael n)
+  (define (helper n test)
+    (cond ((= test n) true)
+          ((= (expmod test n n) test) (helper n (+ test 1)))
+          (else false)))
+  (helper n 1))
+
+(fast-prime? 5 1)
+
+; naive
+;(search-for-primes 1000 1050) ;1009, 1013, 1019, *** 2
+;(search-for-primes 10000 10050) ; 10007, 10009, 10037 *** 5
+;(search-for-primes 100000 100100) ; 100003, 100019, 100043 *** 8
+;(search-for-primes 1000000 1001000) ;1000003, 1000033, 1000037 *** 32
+
+; better divisor search
+;(search-for-primes 1000 1050) ;1009, 1013, 1019, *** 1
+;(search-for-primes 10000 10050) ; 10007, 10009, 10037 *** 3
+;(search-for-primes 100000 100100) ; 100003, 100019, 100043 *** 5
+;(search-for-primes 1000000 1001000) ;1000003, 1000033, 1000037 *** 16
+
+; fermat method
+;(search-for-primes 1000 1050) ;1009, 1013, 1019, *** 1
+;(search-for-primes 10000 10050) ; 10007, 10009, 10037 *** 2
+;(search-for-primes 100000 100100) ; 100003, 100019, 100043 *** 2
+;(search-for-primes 1000000 1001000) ;1000003, 1000033, 1000037 *** 2
