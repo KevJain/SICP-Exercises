@@ -1,5 +1,5 @@
 # SICP Exercises
-This repository contains my solutions to the exercises in [Structure and Interpretation of Computer Programs]( https://mitp-content-server.mit.edu/books/content/sectbyfn/books_pres_0/6515/sicp.zip/index.html)
+This repository contains my code for the exercises in [Structure and Interpretation of Computer Programs]( https://mitp-content-server.mit.edu/books/content/sectbyfn/books_pres_0/6515/sicp.zip/index.html)
 
 1.1
 1.2
