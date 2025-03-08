@@ -401,22 +401,141 @@
                                    (* x x)))
                    (lambda (i) (- (* 2 i) 1))))
 
+;(exact->inexact (tan-cf 1 10))
 
-(exact->inexact (tan-cf 1 10))
-      
+;1.40
+(define dx 0.00001)
+(define (deriv g)
+  (lambda (x)
+    (/ (- (g (+ x dx)) (g x))
+       dx)))
+(define (newton-transform g)
+  (lambda (x)
+    (- x (/ (g x) ((deriv g) x)))))
+(define (newtons-method g guess)
+  (fixed-point (newton-transform g) guess))
   
+(define (cubic a b c)
+  (lambda (x)
+    (+ (cube x) (* a (square x)) (* b x) c)))
 
+;(newtons-method (cubic -3 3 -1) 1.2)
+(define (double-apply f)
+  (lambda (x)
+    (f (f x))))
+
+;1.41
+;(inc 1)
+;((double-apply inc) 1)
+;(((double-apply (double-apply double-apply)) inc) 5) ; 21
+; (double-apply (double-apply double-apply)) f -> ((double double) ((double double) f))
+;  -> ((double double) ((double (double f)))) -> ((double double) ((double (f (f x)))))
+; -> ((double double) ((f (f (f (f x)))))) -> (f ...16...f x)
+; (double double) applies the function four times
+; doubling (double double) means we apply double double twice
+; the first application gives four-time composition of our original function
+; applying double double to the four time application of the original function composes THAT four times
+; when we apply fourfold application four times, we get sixteen times application of the original function
+
+;1.42
+(define (compose f g)
+  (lambda (x)
+    (f (g x))))
+
+;((compose square inc) 6)
+;1.43
+(define (repeated f n)
+  (cond ((= n 0) (lambda (x) x))
+        ((= n 1) f)
+        (else (compose f (repeated f (- n 1))))))
+
+;((repeated square 2) 5)
+;1.44
+(define (smooth f)
+  (lambda (x)
+    (/ (+ (f (- x dx)) (f x) (f (+ x dx))) 3)))
+
+(define (smooth-n f n)
+  ((repeated smooth n) f))
+
+;((smooth square) 3)
+;((smooth-n square 1) 3)
+
+;1.45
+(define (average-damp f)
+  (lambda (x) (average x (f x))))
+
+(define (sqrt-damp x)
+  (fixed-point (average-damp (lambda (y) (/ x y)))
+               1.0))
+
+;((average-damp square) 10)
+;(sqrt-damp 9)
   
+(define (cube-root x)
+  (fixed-point (average-damp (lambda (y) (/ x (square y))))
+               1.0))
+
+; Doesn't converge with only 1 average damp
+(define (fourth-root x)
+  (fixed-point (average-damp (lambda (y) (/ x (cube y))))
+               1.0))
+
+; Try multiple:
+(define (fourth-root-damp x)
+  (fixed-point ((repeated average-damp 2) (lambda (y) (/ x (pow y 3))))
+               1.0))
+
+(define (fifth-root-damp x)
+  (fixed-point ((repeated average-damp 2) (lambda (y) (/ x (pow y 4))))
+               1.0))
+
+(define (sixth-root-damp x)
+  (fixed-point ((repeated average-damp 2) (lambda (y) (/ x (pow y 5))))
+               1.0))
 
 
+(define (nth-root x n)
+  (fixed-point ((repeated average-damp 2) (lambda (y) (/ x (pow y (- n 1)))))
+               1.0))
+
+(define (pow base exp)
+  (if (= exp 0)
+      1
+      (* base (pow base (- exp 1)))))
+
+; One damp works for square and cube roots
+; Two damps work for 4th to seventh roots
+; Conjecture: m damps work for up to 2^(m+1) - 1 roots
+; Rearranging: m roots require ceil(log_2(m + 1)) - 1 damps
+
+(define (log-base base n)
+  (/ (log n) (log base)))
+
+; Final result: works for any n > 1
+(define (nth-root-damp number n)
+  (fixed-point ((repeated average-damp (- (ceiling (log-base 2 (+ n 1))) 1)) (lambda (y) (/ number (pow y (- n 1)))))
+               1.0))
+
+;1.46
+(define (iterative-improve good-enough improve)
+  (define (iterate x)
+    (if (good-enough x)
+        x
+        (iterate (improve x))))
+  (lambda (x) (iterate x)))
+
+(define (new-sqrt x)
+  ((iterative-improve (lambda (guess) (good-enough? guess x)) (lambda (y) (average y (/ x y)))) 1))
+
+;(new-sqrt 4)
+(define (good-enough-fixed f x)
+  (if (< (abs (- (f x) x)) tolerance)
+      #t
+      #f))
   
-
-
-
-
-
-
-
+(define (new-fixed-point f)
+  ((iterative-improve (lambda (x) (good-enough-fixed f x)) (average-damp f)) 1))
 
 
 
