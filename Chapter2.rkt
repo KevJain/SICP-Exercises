@@ -96,10 +96,10 @@
 
 (define r1 (make-rectangle1 (make-segment (make-point 1 1) (make-point 5 6))))
 (define r2 (make-rectangle2 (make-point 1 1) (dimensions 5 6)))
-(rectangle-area r1)
-(rectangle-perimeter r1)
-(rectangle-area r2)
-(rectangle-perimeter r2)
+;(rectangle-area r1)
+;(rectangle-perimeter r1)
+;(rectangle-area r2)
+;(rectangle-perimeter r2)
 
 ;2.4
 ; The equivalent definition is
@@ -108,7 +108,29 @@
 ; i.e. cons produces a function that takes a function as an argument and applies that argument onto the pair
 ; and for cdr, we provide a lambda function that takes in two arguments and returns the second
 
+;2.5
+(define (pow base exp)
+  (if (= 0 exp)
+      1
+      (* base (pow base (- exp 1)))))
+(define (cons-numeric a b) (* (pow 2 a) (pow 3 b)))
+(define (get-exponent n base)
+  (if (= (modulo n base) 0)
+      (+ 1 (get-exponent (/ n base) base))
+      0
+  ))
+  
+(define (car-numeric n) (get-exponent n 2))
+(define (cdr-numeric n) (get-exponent n 3))
 
+(define p (cons-numeric 5 6))
+;(car-numeric p)
+;(cdr-numeric p)
+
+;2.6
+; TODO: investigate the lambda calculus
+  
+  
 
 
 
