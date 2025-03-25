@@ -118,20 +118,44 @@
   (if (= (modulo n base) 0)
       (+ 1 (get-exponent (/ n base) base))
       0
-  ))
-  
+      ))
+
 (define (car-numeric n) (get-exponent n 2))
 (define (cdr-numeric n) (get-exponent n 3))
 
 (define p (cons-numeric 5 6))
+
 ;(car-numeric p)
 ;(cdr-numeric p)
 
 ;2.6
-; TODO: investigate the lambda calculus
-  
-  
+(define zero (lambda (f) (lambda (x) x)))
+(define (add-1 n)
+  (lambda (f) (lambda (x) (f ((n f) x)))))
 
+;The church numeral n represents the action of composing a function n times
+;Therefore, if the church numeral n is applied to the increment function, the
+; result is a function that increments n times. Passing zero to this resulting function
+; yields the 'traditional' integer n.
+; ((zero inc) 0) ; composes the 'inc' function 0 times -> we are left with the identity function
+; (((add-1 zero) inc) 0) ; simplifies to (inc 0)
+; In other words, the church numeral n is the exact same thing as (repeated n), which we previously saw
+
+(define one (lambda (f) (lambda (x) (f x))))
+;((one inc) 0)
+
+(define two (lambda (f) (lambda (x) (f (f x)))))
+;((two (two inc)) 0)
+
+(define (add a b)
+  (lambda (f) (lambda (x) ((a f) ((b f) x)))))
+
+(define (mult a b)
+  (lambda (f) (lambda (x)
+                ((a (b f)) x))))
+;(((mult two two) inc) 0)
+;(((add two one) inc) 0)
+  
 
 
 

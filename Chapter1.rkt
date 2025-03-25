@@ -1,4 +1,4 @@
-;#lang sicp
+#lang sicp
 ; uncomment above to run code
 (define (sqrt-iter prev guess x)
   (if (new-good-enough? prev guess)
