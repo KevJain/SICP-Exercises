@@ -183,9 +183,9 @@
   (if (and (<= (lower-bound y) 0) (<= 0 (upper-bound y)))
       (display "error dividing by zero")
       (mul-interval x
-                (make-interval
-                 (/ 1.0 (upper-bound y))
-                 (/ 1.0 (lower-bound y))))))
+                    (make-interval
+                     (/ 1.0 (upper-bound y))
+                     (/ 1.0 (lower-bound y))))))
 
 ;2.8
 (define (sub-interval x y)
@@ -261,19 +261,19 @@
   (make-interval (- c w) (+ c w)))
 
 (define (center i)
-  (/ (+ (lower-bound i) 
-        (upper-bound i)) 
+  (/ (+ (lower-bound i)
+        (upper-bound i))
      2))
 
 (define (width-i i)
-  (/ (- (upper-bound i) 
-        (lower-bound i)) 
+  (/ (- (upper-bound i)
+        (lower-bound i))
      2))
 
 (define (make-center-percent center percent)
   (define width (* center (/ percent 100)))
-    (make-interval (- center width)
-                   (+ center width)))
+  (make-interval (- center width)
+                 (+ center width)))
 
 (define (percent interval)
   (* 100 (/ (width-i interval) (center interval))))
@@ -285,16 +285,16 @@
 
 ;2.14
 (define (par1 r1 r2)
-  (div-interval 
+  (div-interval
    (mul-interval r1 r2)
    (add-interval r1 r2)))
 
 (define (par2 r1 r2)
   (let ((one (make-interval 1 1)))
-    (div-interval 
+    (div-interval
      one
-     (add-interval 
-      (div-interval one r1) 
+     (add-interval
+      (div-interval one r1)
       (div-interval one r2)))))
 
 (define res1 (make-interval 95 105))
@@ -307,3 +307,58 @@
 ;(percent (par2 res2 res2))
 ; par1 reports a ~3x increase in percentage tolerance compared to par2!
 ;2.15
+; Yes, each time an interval with uncertainty is introduced into the computation, more uncertainty is added.
+; In par1, we introduce R1 and R2 twice each, whereas par2 introduces them once each only.
+
+;2.16
+; This task is impossible. To achieve this, we would need to have a program that is able to reduce ANY
+; combination of arithmetic operations involving multiple instances of a free variable into a representation
+; where the free variable appears only once.
+
+;2.17, assume l is non-empty
+(define (last-pair l)
+  (if (null? (cdr l))
+      l
+      (last-pair (cdr l))))
+;(last-pair (list 23 72 149 34))
+
+;2.18: THE classic
+(define (reverse l)
+  (define (reverse-helper li)
+    (if (null? (cdr li))
+        (car li)
+        (reverse-helper (cons (cons (cadr li) (car li))
+                              (cddr li)))))
+  (reverse-helper (cons (cons (car l) nil)
+                 (cdr l))))
+;(reverse (list 1 4 9 16 25 36))
+
+(define (reverse-a l)
+  (if (null? l)
+      l
+      (append (reverse-a (cdr l)) (list (car l)))))
+
+;(reverse-a (list 1 4 9 16 25 36))
+(define (first-n n)
+  (define (first-n-iter current count)
+    (if (= n count)
+        current
+        (first-n-iter (append current
+                              (list count))
+                      (+ count 1))))
+  (first-n-iter '() 0))
+
+(define l (first-n 10000))
+
+(define (timed-test procedure input)
+  (newline)
+  (define start-time (runtime))
+  (procedure input)
+  (display (- (runtime) start-time)))
+
+(timed-test reverse l) ; 28 for 10000, 770 for 50000
+(timed-test reverse-a l) ; 141464 for 5633747 for 50000
+; Reversing with appending is many orders of magnitude worse than mine.
+; Time complexity of reverse-a is O(n^2), whereas reverse is O(n)
+
+;2.19
