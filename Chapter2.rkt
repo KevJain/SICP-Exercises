@@ -155,7 +155,59 @@
                 ((a (b f)) x))))
 ;(((mult two two) inc) 0)
 ;(((add two one) inc) 0)
-  
 
+;2.7
+(define (make-interval a b) (cons a b))
+(define (lower-bound interval) (car interval))
+(define (upper-bound interval) (cdr interval))
 
+(define (add-interval x y)
+  (make-interval (+ (lower-bound x)
+                    (lower-bound y))
+                 (+ (upper-bound x)
+                    (upper-bound y))))
+
+(define (mul-interval x y)
+  (let ((p1 (* (lower-bound x)
+               (lower-bound y)))
+        (p2 (* (lower-bound x)
+               (upper-bound y)))
+        (p3 (* (upper-bound x)
+               (lower-bound y)))
+        (p4 (* (upper-bound x)
+               (upper-bound y))))
+    (make-interval (min p1 p2 p3 p4)
+                   (max p1 p2 p3 p4))))
+
+(define (div-interval x y)
+  (mul-interval x
+                (make-interval
+                 (/ 1.0 (upper-bound y))
+                 (/ 1.0 (lower-bound y)))))
+
+;2.8
+(define (sub-interval x y)
+  (add-interval x
+                (make-interval
+                 (- 0 (upper-bound y))
+                 (- 0 (lower-bound y)))))
+
+;(define unit (make-interval 0 1))
+;(define u2 (make-interval -2 4))
+
+;(add-interval unit u2)
+;(sub-interval unit u2)
+
+;2.9
+; Width of add-interval: ((upper x) + (upper y) - ((lower x) + (lower y))) / 2
+; = ((upper x) - (lower x)) / 2 + ((upper y) - (lower y)) / 2
+; = width x + width y
+; Width of sub-interval: (((upper x) - (lower y)) - ((lower x) - (upper y))) / 2
+; = ((upper x) - (lower x)) / 2 + ((upper y) - (lower y)) / 2
+; = width x + width y
+
+; (mul-interval (0 0) (0 1)) = (0 0), with width 0
+; but (mul-interval (1 1) (0 1)) = (0 1), with width 1, yet the widths are the same
+; (div-interval (0 0) (1 2)) = (0 0), width 0
+; but (div-interval (1 1) (1 2)) = (1/2 1) with width 1
 
