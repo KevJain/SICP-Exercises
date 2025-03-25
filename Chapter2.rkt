@@ -180,10 +180,12 @@
                    (max p1 p2 p3 p4))))
 
 (define (div-interval x y)
-  (mul-interval x
+  (if (and (<= (lower-bound y) 0) (<= 0 (upper-bound y)))
+      (display "error dividing by zero")
+      (mul-interval x
                 (make-interval
                  (/ 1.0 (upper-bound y))
-                 (/ 1.0 (lower-bound y)))))
+                 (/ 1.0 (lower-bound y))))))
 
 ;2.8
 (define (sub-interval x y)
@@ -192,7 +194,7 @@
                  (- 0 (upper-bound y))
                  (- 0 (lower-bound y)))))
 
-;(define unit (make-interval 0 1))
+;(define unit (make-interval 1/2 1))
 ;(define u2 (make-interval -2 4))
 
 ;(add-interval unit u2)
@@ -211,3 +213,97 @@
 ; (div-interval (0 0) (1 2)) = (0 0), width 0
 ; but (div-interval (1 1) (1 2)) = (1/2 1) with width 1
 
+;2.10
+;(div-interval u2 unit)
+
+;2.11
+(define (span-zero? x)
+  (and (< (lower-bound x) 0) (< 0 (upper-bound x))))
+(define (positive-interval? x)
+  (< 0 (lower-bound x)))
+(define (mul-interval2 x y)
+  (cond ((and (span-zero? x) (span-zero? y))
+         (make-interval (min (* (upper-bound x)
+                                (lower-bound y))
+                             (* (lower-bound x)
+                                (upper-bound y)))
+                        (max (* (lower-bound x)
+                                (lower-bound y))
+                             (* (upper-bound x)
+                                (upper-bound y)))))
+        ((and (span-zero? x) (positive-interval? y))
+         (make-interval (* (lower-bound x) (upper-bound y))
+                        (* (upper-bound x) ((upper-bound y)))))
+        ((and (span-zero? x) (not (positive-interval? y)))
+         (make-interval (* (upper-bound x) (lower-bound y))
+                        (* (lower-bound x) (lower-bound y))))
+        ((and (positive-interval? x) (span-zero? y))
+         (make-interval (* (upper-bound x) (lower-bound y))
+                        (* (upper-bound x) (upper-bound y))))
+        ((and (positive-interval? x) (positive-interval? y))
+         (make-interval (* (lower-bound x) (lower-bound y))
+                        (* (upper-bound x) (upper-bound y))))
+        ((and (positive-interval? x) (not (positive-interval? y)))
+         (make-interval (* (upper-bound x) (lower-bound y))
+                        (* (lower-bound x) (upper-bound y))))
+        ((and (not (positive-interval? x)) (span-zero? y))
+         (make-interval (* (lower-bound x) (upper-bound y))
+                        (* (lower-bound x) (lower-bound y))))
+        ((and (not (positive-interval? x)) (positive-interval? y))
+         (make-interval (* (lower-bound x) (upper-bound y))
+                        (* (upper-bound x) (lower-bound y))))
+        ((and (not (positive-interval? x)) (not (positive-interval? y)))
+         (make-interval (* (upper-bound x) (upper-bound y))
+                        (* (lower-bound x) (lower-bound y))))))
+
+;2.12
+(define (make-center-width c w)
+  (make-interval (- c w) (+ c w)))
+
+(define (center i)
+  (/ (+ (lower-bound i) 
+        (upper-bound i)) 
+     2))
+
+(define (width-i i)
+  (/ (- (upper-bound i) 
+        (lower-bound i)) 
+     2))
+
+(define (make-center-percent center percent)
+  (define width (* center (/ percent 100)))
+    (make-interval (- center width)
+                   (+ center width)))
+
+(define (percent interval)
+  (* 100 (/ (width-i interval) (center interval))))
+
+;(percent (make-center-percent 100 20))
+;2.13
+; If interval a has percentage tolerance x%, and interval b has percentage tolerance y%,
+; then interval a * b has percentage tolerance (1 - (1 + a) * (1 + b))
+
+;2.14
+(define (par1 r1 r2)
+  (div-interval 
+   (mul-interval r1 r2)
+   (add-interval r1 r2)))
+
+(define (par2 r1 r2)
+  (let ((one (make-interval 1 1)))
+    (div-interval 
+     one
+     (add-interval 
+      (div-interval one r1) 
+      (div-interval one r2)))))
+
+(define res1 (make-interval 95 105))
+(define res2 (make-interval 49 51))
+
+;(percent (par1 res1 res1))
+;(percent (par1 res2 res2))
+
+;(percent (par2 res1 res1))
+;(percent (par2 res2 res2))
+; par1 reports a ~3x increase in percentage tolerance compared to par2!
+;2.15
