@@ -330,7 +330,7 @@
         (reverse-helper (cons (cons (cadr li) (car li))
                               (cddr li)))))
   (reverse-helper (cons (cons (car l) nil)
-                 (cdr l))))
+                        (cdr l))))
 ;(reverse (list 1 4 9 16 25 36))
 
 (define (reverse-a l)
@@ -348,7 +348,7 @@
                       (+ count 1))))
   (first-n-iter '() 0))
 
-(define l (first-n 10000))
+;(define l (first-n 10000))
 
 (define (timed-test procedure input)
   (newline)
@@ -356,9 +356,94 @@
   (procedure input)
   (display (- (runtime) start-time)))
 
-(timed-test reverse l) ; 28 for 10000, 770 for 50000
-(timed-test reverse-a l) ; 141464 for 5633747 for 50000
+;(timed-test reverse l) ; 28 for 10000, 770 for 50000
+;(timed-test reverse-a l) ; 141464 for 5633747 for 50000
 ; Reversing with appending is many orders of magnitude worse than mine.
 ; Time complexity of reverse-a is O(n^2), whereas reverse is O(n)
 
 ;2.19
+(define (first-denomination coins) (car coins))
+(define (except-first-denomination coins) (cdr coins))
+(define (no-more? coins) (null? coins))
+
+(define (cc amount coin-values)
+  (cond ((= amount 0) 
+         1)
+        ((or (< amount 0) 
+             (no-more? coin-values)) 
+         0)
+        (else
+         (+ (cc 
+             amount
+             (except-first-denomination 
+              coin-values))
+            (cc 
+             (- amount
+                (first-denomination 
+                 coin-values))
+             coin-values)))))
+
+(define us-coins 
+  (list 1 50 10 5 25))
+
+(define uk-coins 
+  (list 100 50 20 10 5 2 1 0.5))
+;(display 5)
+;(cc 100 us-coins)
+; Order doesn't matter. The breakdown 100 = 50 + 25 + 10 + 5 + 5 + 5 will be counted 
+; under the reordering (1 50 10 5 25) as 100 = 50 + 10 + 5 + 5 + 5 + 25
+
+;2.20
+(define (same-parity num . li)
+  (define (same-parity-helper n l)
+    (if (null? l)
+        l
+        (if (= 0 (remainder (- n (car l)) 2))
+            (cons (car l)
+                  (same-parity-helper n (cdr l)))
+            (same-parity-helper n (cdr l)))))
+  (cons num (same-parity-helper num li)))
+
+;(same-parity 1 2 3 4 5 6 7)
+;(same-parity 2 3 4 5 6 7)
+
+(define (map proc l)
+  (if (null? l)
+      nil
+      (cons (proc (car l))
+            (map proc (cdr l)))))
+
+;(map abs (list -10 2.5 -11.6 17))
+;(map (lambda (x) (* x x)) (list 1 2 3 4))
+;2.21
+(define (square-list1 items)
+  (if (null? items)
+      nil
+      (cons (* (car items) (car items))
+            (square-list1 (cdr items)))))
+
+(define (square-list2 items)
+  (map (lambda (x) (* x x)) items))
+
+;(square-list1 (list 1 2 3 4))
+;(square-list2 (list 1 2 3 4))
+
+;2.22
+; The first produces a list in backwards order because elements are taken from the front
+; of the original list, and put at the BACK of the newly created list
+; The second procedure has the elements in the 'right order', but the structure of the output
+; does not correspond to lists as we understand them, it has the data in the cdr and the remaining list
+; in the car
+
+;2.23
+(define (for-each proc items)
+  (if (null? items)
+      #t
+      (begin (proc (car items))
+       (for-each proc (cdr items)))))
+
+(for-each 
+ (lambda (x) (newline) (display x))
+ (list 57 321 88 85))
+
+;2.24
