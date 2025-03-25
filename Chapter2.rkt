@@ -442,8 +442,52 @@
       (begin (proc (car items))
        (for-each proc (cdr items)))))
 
-(for-each 
- (lambda (x) (newline) (display x))
- (list 57 321 88 85))
+;(for-each 
+; (lambda (x) (newline) (display x))
+; (list 57 321 88 85))
 
 ;2.24
+; (1 (2 (3 4)))
+;(list 1 (list 2 (list 3 4)))
+
+;2.25 
+;(car (cdaddr (list 1 3 (list 5 7) 9)))
+;(caar (list (list 7)))
+;(cadadr (cadadr (cadadr (list 1 (list 2 (list 3 (list 4 (list 5 (list 6 7)))))))))
+
+;2.26
+(define x! (list 1 2 3))
+(define y! (list 4 5 6))
+;(append x! y!) ; (1 2 3 4 5 6)
+;(cons x! y!) ; ((1 2 3) 4 5 6)
+;(list x! y!) ; ((1 2 3) (4 5 6))
+
+;2.27: TODO: rewrite original reverse to be cleaner, try to remove helper function
+(define x!!
+  (list (list 1 2) (list 3 4)))
+
+(define (deep-reverse l)
+  (define (reverse-helper li)
+    (if (null? li)
+        nil
+        (reverse-helper (cons (cons (cadr li) (car li))
+                              (cddr li)))))
+  (reverse-helper (cons (cons (car l) nil)
+                        (cdr l))))
+
+x!!
+
+;2.28
+(define (fringe tree)
+  (cond ((null? tree) nil)
+        ((not (pair? (car tree)))
+         (append (list (car tree))
+                 (fringe (cdr tree))))
+        (else (append (fringe (car tree))
+                      (fringe (cdr tree))))))
+
+(define x!!! 
+  (list (list 1 2) (list 3 4)))
+
+;(fringe x!!!)
+;(fringe (list x!!! x!!!))
