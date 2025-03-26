@@ -367,30 +367,30 @@
 (define (no-more? coins) (null? coins))
 
 (define (cc amount coin-values)
-  (cond ((= amount 0) 
+  (cond ((= amount 0)
          1)
-        ((or (< amount 0) 
-             (no-more? coin-values)) 
+        ((or (< amount 0)
+             (no-more? coin-values))
          0)
         (else
-         (+ (cc 
+         (+ (cc
              amount
-             (except-first-denomination 
+             (except-first-denomination
               coin-values))
-            (cc 
+            (cc
              (- amount
-                (first-denomination 
+                (first-denomination
                  coin-values))
              coin-values)))))
 
-(define us-coins 
+(define us-coins
   (list 1 50 10 5 25))
 
-(define uk-coins 
+(define uk-coins
   (list 100 50 20 10 5 2 1 0.5))
 ;(display 5)
 ;(cc 100 us-coins)
-; Order doesn't matter. The breakdown 100 = 50 + 25 + 10 + 5 + 5 + 5 will be counted 
+; Order doesn't matter. The breakdown 100 = 50 + 25 + 10 + 5 + 5 + 5 will be counted
 ; under the reordering (1 50 10 5 25) as 100 = 50 + 10 + 5 + 5 + 5 + 25
 
 ;2.20
@@ -440,9 +440,9 @@
   (if (null? items)
       #t
       (begin (proc (car items))
-       (for-each proc (cdr items)))))
+             (for-each proc (cdr items)))))
 
-;(for-each 
+;(for-each
 ; (lambda (x) (newline) (display x))
 ; (list 57 321 88 85))
 
@@ -450,7 +450,7 @@
 ; (1 (2 (3 4)))
 ;(list 1 (list 2 (list 3 4)))
 
-;2.25 
+;2.25
 ;(car (cdaddr (list 1 3 (list 5 7) 9)))
 ;(caar (list (list 7)))
 ;(cadadr (cadadr (cadadr (list 1 (list 2 (list 3 (list 4 (list 5 (list 6 7)))))))))
@@ -475,7 +475,7 @@
   (reverse-helper (cons (cons (car l) nil)
                         (cdr l))))
 
-x!!
+;x!!
 
 ;2.28
 (define (fringe tree)
@@ -486,8 +486,138 @@ x!!
         (else (append (fringe (car tree))
                       (fringe (cdr tree))))))
 
-(define x!!! 
+(define x!!!
   (list (list 1 2) (list 3 4)))
 
 ;(fringe x!!!)
 ;(fringe (list x!!! x!!!))
+
+;2.29
+
+(define (make-mobile left right)
+  (list left right))
+
+(define (make-branch length structure)
+  (list length structure))
+
+;1.
+(define (left-branch mobile)
+  (car mobile))
+
+(define (right-branch mobile)
+  (cadr mobile))
+
+;2.
+(define (get-structure branch)
+  (cadr branch))
+(define (total-weight mobile)
+  (if (number? mobile)
+      mobile
+      (+ (total-weight (get-structure (left-branch mobile)))
+         (total-weight (get-structure (right-branch mobile))))))
+
+(define b1 (make-branch 2 5))
+(define b2 (make-branch 1 10))
+;(total-weight (get-structure b1))
+(define unbalanced (make-mobile (make-branch 1 (make-mobile b1 b2)) b1))
+;(total-weight unbalanced)
+;3.
+(define (torque branch)
+  (* (car branch) (total-weight (get-structure branch))))
+(define (balanced? mobile)
+  (cond ((number? mobile) #t)
+        ((= (torque (left-branch mobile))
+            (torque (right-branch mobile)))
+         (and (balanced? (get-structure (left-branch mobile)))
+              (balanced? (get-structure (right-branch mobile)))))
+        (else #f)))
+;(balanced? unbalanced)
+;(balanced? (make-mobile b1 b2))
+;4. I just need to change cadr to become cdr in my selectors
+
+;2.30
+(define tree-instance (list 1
+                            (list 2 (list 3 4) 5)
+                            (list 6 7)))
+
+(define (square-tree-direct tree)
+  (if (null? tree)
+      nil
+      (if (pair? tree)
+          (cons (square-tree-direct (car tree))
+                (square-tree-direct (cdr tree)))
+          (* tree tree))))
+
+(define (square-tree-map tree)
+  (map (lambda (sub-tree)
+         (if (number? sub-tree)
+             (* sub-tree sub-tree)
+             (square-tree-map sub-tree)))
+       tree))
+
+;(square-tree-direct tree-instance)
+;(square-tree-map tree-instance)
+
+;2.31
+(define (tree-map proc tree)
+  (map (lambda (sub-tree)
+         (if (number? sub-tree)
+             (proc sub-tree)
+             (tree-map proc sub-tree)))
+       tree))
+
+;(tree-map square tree-instance)
+
+;2.32
+(define (subsets s)
+  (if (null? s)
+      (list nil)
+      (let ((rest (subsets (cdr s))))
+        (append rest (map (lambda (subset)
+                            (append (list (car s)) subset)) rest)))))
+
+; rest is the set of all subsets not containing the first element of s
+; since we can split the subsets of s into exactly two equal halves: those containing
+; the first element, and those that do not, we can produce the former from the latter
+; by prepending the first element of s to each subset
+
+;(subsets (list 1 2 3))
+
+;2.33
+(define (accumulate op initial sequence)
+  (if (null? sequence)
+      initial
+      (op (car sequence)
+          (accumulate op 
+                      initial 
+                      (cdr sequence)))))
+
+;(accumulate * 1 (list 1 2 3 4 5))
+(define (map-accum p sequence)
+  (accumulate (lambda (x y) (cons (p x) y))
+              nil sequence))
+
+;(map-accum square (list 1 2 3 4 5))
+
+(define (append-accum seq1 seq2)
+  (accumulate cons seq2 seq1))
+
+;(append-accum (list 1 2 3 4 5) (list 6 7 8 9))
+
+(define (length sequence)
+  (accumulate (lambda (x y) (+ 1 y)) 0 sequence))
+
+;(length (append-accum (list 1 2 3 4 5) (list 6 7 8 9)))
+
+;2.34
+(define 
+  (horner-eval x coefficient-sequence)
+  (accumulate 
+   (lambda (this-coeff higher-terms)
+     (+ this-coeff (* x higher-terms)))
+   0
+   coefficient-sequence))
+
+(horner-eval 2 (list 1 3 0 5 0 1))
+
+;2.35
