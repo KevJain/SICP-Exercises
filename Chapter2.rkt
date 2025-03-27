@@ -6,6 +6,23 @@
 (define (fib n) (cond ((= n 0) 0) ((= n 1) 1) (else (+ (fib (- n 1)) (fib (- n 2)))))) ;;; ***not in book, but needed for code before quote is introduced***
 (define nil '()) ;;;----------- ;;;from section 3.3.3 for section 2.4.3 ;;; to support operation/type table for data-directed dispatch
 (define (assoc key records) (cond ((null? records) false) ((equal? key (caar records)) (car records)) (else (assoc key (cdr records))))) (define (make-table) (let ((local-table (list '*table*))) (define (lookup key-1 key-2) (let ((subtable (assoc key-1 (cdr local-table)))) (if subtable (let ((record (assoc key-2 (cdr subtable)))) (if record (cdr record) false)) false))) (define (insert! key-1 key-2 value) (let ((subtable (assoc key-1 (cdr local-table)))) (if subtable (let ((record (assoc key-2 (cdr subtable)))) (if record (set-cdr! record value) (set-cdr! subtable (cons (cons key-2 value) (cdr subtable))))) (set-cdr! local-table (cons (list key-1 (cons key-2 value)) (cdr local-table))))) 'ok) (define (dispatch m) (cond ((eq? m 'lookup-proc) lookup) ((eq? m 'insert-proc!) insert!) (else (error "Unknown operation -- TABLE" m)))) dispatch)) (define operation-table (make-table)) (define get (operation-table 'lookup-proc)) (define put (operation-table 'insert-proc!)) ;;;-----------
+
+(define (smallest-divisor n)
+  (find-divisor n 2))
+(define (find-divisor n test-divisor)
+  (cond ((> (square test-divisor) n) n)
+        ((divides? test-divisor n) test-divisor)
+        (else (find-divisor n (next test-divisor)))))
+(define (next test-divisor)
+  (if (= test-divisor 2)
+      3
+      (+ test-divisor 2)))
+(define (divides? a b)
+  (= (remainder b a) 0))
+(define (prime? n)
+  (and (= n (smallest-divisor n))
+       (not (= n 1)))
+  )
 ;;; END imported helper code
 
 (define x (cons 1 2))
@@ -406,13 +423,13 @@
 
 ;(same-parity 1 2 3 4 5 6 7)
 ;(same-parity 2 3 4 5 6 7)
-
+#|
 (define (map proc l)
   (if (null? l)
       nil
       (cons (proc (car l))
             (map proc (cdr l)))))
-
+|#
 ;(map abs (list -10 2.5 -11.6 17))
 ;(map (lambda (x) (* x x)) (list 1 2 3 4))
 ;2.21
@@ -588,8 +605,8 @@
   (if (null? sequence)
       initial
       (op (car sequence)
-          (accumulate op 
-                      initial 
+          (accumulate op
+                      initial
                       (cdr sequence)))))
 
 ;(accumulate * 1 (list 1 2 3 4 5))
@@ -610,14 +627,208 @@
 ;(length (append-accum (list 1 2 3 4 5) (list 6 7 8 9)))
 
 ;2.34
-(define 
+(define
   (horner-eval x coefficient-sequence)
-  (accumulate 
+  (accumulate
    (lambda (this-coeff higher-terms)
      (+ this-coeff (* x higher-terms)))
    0
    coefficient-sequence))
 
-(horner-eval 2 (list 1 3 0 5 0 1))
+;(horner-eval 2 (list 1 3 0 5 0 1))
 
+(define tree-x (cons (list 1 2) (list 3 4)))
+;tree-x
 ;2.35
+(define (get-leaves tree)
+  (cond ((null? tree) nil)
+        ((number? tree) (list tree))
+        (else (append (get-leaves (car tree))
+                      (get-leaves (cdr tree))))))
+(define (count-leaves t)
+  (accumulate + 0 (map (lambda (tree)
+                         (if (number? tree)
+                             1
+                             (count-leaves tree))) t)
+              ))
+;(count-leaves tree-x)
+
+;2.36
+(define (accumulate-n op init seqs)
+  (if (null? (car seqs))
+      nil
+      (cons (accumulate op init (map (lambda (sequence) (car sequence)) seqs))
+            (accumulate-n op init (map (lambda (sequence) (cdr sequence)) seqs)))))
+
+(define s (list (list 1 2 3) (list 4 5 6) (list 7 8 9) (list 10 11 12)))
+;(accumulate-n + 0 s)
+
+;2.37
+(define (dot-product v w)
+  (accumulate + 0 (map * v w)))
+
+;(dot-product (list 1 2 3) (list 3 3 3))
+
+(define (matrix-*-vector m v)
+  (map (lambda (row) (dot-product row v)) m))
+
+(define I3 (list (list 1 0 0) (list 0 1 0) (list 0 0 1)))
+(define A3 (list (list 1 2 3) (list 4 5 6) (list 7 8 9)))
+;(matrix-*-vector I3 (list 1 2 3))
+
+(define (transpose mat)
+  (accumulate-n cons nil mat))
+
+;(transpose I3)
+
+(define (matrix-*-matrix m n)
+  (let ((cols (transpose n)))
+    (map (lambda (row) (matrix-*-vector cols row)) m)))
+
+;(matrix-*-matrix A3 A3)
+
+;2.38
+(define (fold-left op initial sequence)
+  (define (iter result rest)
+    (if (null? rest)
+        result
+        (iter (op result (car rest))
+              (cdr rest))))
+  (iter initial sequence))
+
+;(accumulate / 1 (list 1 2 3)) ; 3/2
+;(fold-left  / 1 (list 1 2 3)) ; 1/6
+;(accumulate list nil (list 1 2 3)) ; (1 (2 (3 ())))
+;(fold-left  list nil (list 1 2 3)) ; (((() 1) 2) 3)
+;(accumulate (lambda (x y) x) 0 (list 1 2 3)) ; 1
+;(fold-left (lambda (x y) x) 0 (list 1 2 3)) ; 0
+
+;(accumulate + 1 (list 1 2 3))
+;(fold-left + 1 (list 1 2 3))
+
+; (accumulate * init (x y z)) = (x * (y * (z * init)))
+; but (fold-left * init (x y z)) = (((init * x) * y) * z)
+; so fold-left and fold-right are equal when the operation is associative AND commutative, OR
+; if the operation is ONLY associative AND the initial element is the identity element
+
+;2.39
+(define (fold-right op initial l)
+  (if (null? l)
+      initial
+      (op (car l)
+          (fold-right op initial (cdr l)))))
+(define (reverse-fr sequence)
+  (fold-right
+   (lambda (x y) (append y (list x))) nil sequence))
+
+(define (reverse-fl sequence)
+  (fold-left
+   (lambda (x y) (append (list y) x)) nil sequence))
+
+;(reverse-fr (list 1 2 3 4))
+;(reverse-fl (list 1 2 3 4))
+
+(define (enumerate-interval start end)
+  (if (> start end)
+      nil
+      (cons start (enumerate-interval (+ start 1) end))))
+
+;(enumerate-interval 1 5)
+
+(define (filter pred seq)
+  (if (null? seq)
+      nil
+      (if (pred (car seq))
+          (cons (car seq) (filter pred (cdr seq)))
+          (filter pred (cdr seq)))))
+
+;(filter (lambda (x) (= 0 (remainder x 2))) (enumerate-interval 1 10))
+(define (remove item sequence)
+  (filter (lambda (x) (not (= item x))) sequence))
+
+;(remove 5 (remove 6 (enumerate-interval 1 10)))
+
+; flatmap: if each element in the sequence produces multiple elements, and we want to combine
+; all such created elements, then we have to flatmap
+; this avoids (((1 2) (1 3)) ((2 3) (2 4))), and gives ((1 2) (1 3) (2 3) (2 4))
+(define (flatmap procedure sequence)
+  (accumulate append nil (map procedure sequence)))
+
+;2.40
+(define (unique-pairs n)
+  (flatmap (lambda (i) (map (lambda (j) (list i j))
+                            (enumerate-interval 1 (- i 1))))
+           (enumerate-interval 1 n)))
+
+;(unique-pairs 5)
+
+(define (prime-sum-pairs n)
+  (filter (lambda (pair) (prime? (+ (car pair) (cadr pair))))
+          (unique-pairs n)))
+
+;(prime-sum-pairs 6)
+
+;2.41
+(define (unique-triples n)
+  (flatmap (lambda (i) (map (lambda (pair) (append (list i) pair))
+                            (unique-pairs (- i 1))))
+           (enumerate-interval 3 n)))
+;(unique-triples 5)
+(define (triple-sum max target)
+  (filter (lambda (triple) (= (+ (car triple)
+                                 (cadr triple)
+                                 (caddr triple))
+                              target))
+          (unique-triples max)))
+
+;(triple-sum 10 10)
+
+;2.42
+(define empty-board nil) ; board representation is ((row, col))
+(define (make-pos row col) (cons row col))
+(define (row position) (car position))
+(define (col position) (cdr position))
+
+(define (attack? p1 p2)
+  (cond ((and (= (row p1) (row p2)) (= (col p1) (col p2))) #f)
+        ((= (row p1) (row p2)) #t)
+        ((= (col p1) (col p2)) #t)
+        ((= (abs (- (row p1)
+                    (row p2)))
+            (abs (- (col p1)
+                    (col p2)))) #t)
+        (else #f)))
+
+(define (safe? k positions)
+  (define pos (car (filter (lambda (position) (= k (col position))) positions)))
+  (fold-left (lambda (accum other) (and accum (not (attack? pos other)))) 
+             #t
+             positions))
+
+;(safe? 5 (list (make-pos 1 5) (make-pos 5 1) (make-pos 2 2) (make-pos 1 3)))
+(define (adjoin-position row col positions)
+  (cons (make-pos row col) positions))
+
+(define (queens board-size)
+  (define (queen-cols k)
+    (if (= k 0)
+        (list empty-board)
+        (filter
+         (lambda (positions) 
+           (safe? k positions))
+         (flatmap
+          (lambda (rest-of-queens)
+            (map (lambda (new-row)
+                   (adjoin-position 
+                    new-row 
+                    k 
+                    rest-of-queens))
+                 (enumerate-interval 
+                  1 
+                  board-size)))
+          (queen-cols (- k 1))))))
+  (queen-cols board-size))
+
+;(map (lambda (i) (length (queens i))) (enumerate-interval 1 10))
+; amazing!
+
