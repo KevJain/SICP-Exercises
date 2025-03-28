@@ -832,3 +832,9 @@
 ;(map (lambda (i) (length (queens i))) (enumerate-interval 1 10))
 ; amazing!
 
+;2.43
+; The original procedure computes the subproblem (queen-cols (- k 1)) exactly once for each k in the
+; range (1,...,board-size), but Louis' program calls queen-cols(- k 1) eight times for each k!
+; a first approximation then says that his program would take 8^7 times as long to computer 8-queens
+
+;2.44
