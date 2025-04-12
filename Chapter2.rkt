@@ -837,4 +837,151 @@
 ; range (1,...,board-size), but Louis' program calls queen-cols(- k 1) eight times for each k!
 ; a first approximation then says that his program would take 8^7 times as long to computer 8-queens
 
-;2.44
+;Questions 2.44-2.52 (picture language) are in another file
+
+;2.53
+#|
+(list 'a 'b 'c) ; (a b c)
+(list (list 'george)) ; ((george))
+(cdr '((x1 x2) (y1 y2))) ; ((y1 y2))
+(cadr '((x1 x2) (y1 y2))) ; (y1 y2)
+(pair? (car '(a short list))) ; #f
+(memq 'red '((red shoes) (blue socks))) ; #f
+(memq 'red '(red shoes blue socks)) ; (red shoes blue socks)
+|#
+;2.54
+(define (equal? first second)
+  (cond ((and (pair? first) (pair? second))
+         (and (equal? (car first) (car second))
+               (equal? (cdr first) (cdr second))))
+        ((eq? first second) #t)
+        (else #f)))
+
+;(equal? 1 1)
+;(equal? '(this is a list) 
+;        '(this is a list))
+
+;(equal? '(this is a list) 
+;        '(this (is a) list))
+
+;2.55
+
+;(car ''abracadabra)
+; ''abracadabra = (quote (quote (abracadabra))), which is interpreted as (quote (abracadabra)),
+; and (car (quote (abracadabra))) = quote
+
+;2.56
+(define (deriv exp var)
+  (cond ((number? exp) 0)
+        ((variable? exp)
+         (if (same-variable? exp var) 1 0))
+        ((sum? exp)
+         (make-sum (deriv (addend exp) var)
+                   (deriv (augend exp) var)))
+        ((product? exp)
+         (make-sum
+          (make-product 
+           (multiplier exp)
+           (deriv (multiplicand exp) var))
+          (make-product 
+           (deriv (multiplier exp) var)
+           (multiplicand exp))))
+        ((exponentiation? exp)
+         (make-product (make-product
+                        (exponent exp)
+                        (make-exp (base exp) (- (exponent exp) 1)))
+                       (deriv (base exp) var)))
+        (else (error "unknown expression 
+                      type: DERIV" exp))))
+
+(define (variable? x) (symbol? x))
+
+(define (same-variable? x y)
+  (and (variable? x) (eq? x y))) ; Does this work?
+
+;(define (make-sum a1 a2) (list '+ a1 a2))
+;(define (make-product m1 m2) (list '* m1 m2))
+
+(define (sum? exp) 
+  (and (pair? exp) (eq? '+ (car exp))))
+
+(define (addend s) (cadr s))
+(define (augend s)
+  (if (null? (cdddr s)) ; If augend is only one term
+      (caddr s)
+      (append '(+) (cddr s))))
+
+(define (product? exp)
+  (and (pair? exp) (eq? '* (car exp))))
+
+(define (multiplier p) (cadr p))
+(define (multiplicand p)
+  (if (null? (cdddr p))
+      (caddr p)
+      (append '(*) (cddr p))))
+
+(define (exponentiation? exp)
+  (and (pair? exp) (eq? '** (car exp))))
+
+(define (base e) (cadr e))
+(define (exponent e) (caddr e))
+
+(define (=number? e num)
+  (and (number? e) (= e num)))
+
+(define (make-exp base exp)
+  (cond ((=number? exp 0) 1)
+        ((=number? exp 1) base)
+        (else (list '** base exp))))
+
+;(deriv '(+ x 3) 'x)
+;(deriv '(* (* x y) (+ x 3)) 'x)
+
+;(deriv '(** (* x y) 4) 'x)
+;(deriv '(** x 0) 'x)
+;(deriv '(** x 1) 'x)
+
+;2.57
+; Redefined with constant folding + variable length
+
+(define (make-sum a1 a2)
+  (cond ((=number? a1 0) a2)
+        ((=number? a2 0) a1)
+        ((and (number? a1) (number? a2) (+ a1 a2)))
+        (else (list '+ a1 a2))))
+
+(define (make-product m1 m2)
+  (cond ((or (=number? m1 0) (=number? m2 0)) 0)
+        ((=number? m1 1) m2)
+        ((=number? m2 1) m1)
+        ((and (number? m1) (number? m2) (* m1 m2)))
+        (else (list '* m1 m2))))
+
+;(deriv '(+ x x) 'x)
+(define s1 '(+ x x x x))
+;s1
+;(addend s1)
+;(augend s1)
+;(deriv s1 'x)
+;(multiplier s1)
+;(multiplicand s1)
+;(deriv s1 'x)
+(define p3 '(* x y (+ x 3)))
+;(multiplier p3)
+;(multiplicand p3)
+(deriv p3 'x)
+;(deriv '(+ x x x) 'x)
+;(define s2 '(+ x x x))
+
+
+; Sums will be written as (+ _ _ _ ...)
+; But the signature of make-sum will only accept an addend and an augend
+; But if we have a list as the final element of our addend and augend pair,
+; it is very difficult to determine if the list is a list of terms in the sum
+; or a list representing something else entirely (e.g. a product)
+; We could change the signature of make-sum to be variadic
+; Then the augend will always be a list of elements itself, and we can determine if 
+; it is a single element by checking if it is the end of the list
+; otherwise the augend is the first element of this sublist and the sum of the remainder
+; But if we make the augend a list, then we need to defer constant folding for it
+; Thus, we'll only consider constant folding for the addend
